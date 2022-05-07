@@ -1,0 +1,402 @@
+---
+title: "STAT461 Course Project"
+author: "Daniel Fitzgerald, Peter Phillips, Haichen Wei, Ailin Zhang"
+date: "May 5, 2022"
+output: pdf_document
+geometry: left=1in,right=1in,top=1in,bottom=1in
+urlcolor: blue
+header-includes:
+  - \usepackage{subfig}
+---
+
+```{r setupFiles, include = FALSE}
+rm(list = ls())
+# Setting Document Options
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center"
+)
+
+## Load packages
+packages <- c("tidyverse", "knitr", "kableExtra",
+              "parameters", "hasseDiagram", "car",
+              "psych", "emmeans", "rstatix", "lme4", "nlme")
+lapply(packages, library, character.only = TRUE)
+options(knitr.kable.NA = "")
+options(contrasts = c("contr.sum", "contr.poly"))
+source("https://raw.github.com/neilhatfield/STAT461/master/rScripts/ANOVATools.R")
+
+
+```
+
+
+```{r loadData}
+data <- read.csv(
+  file = "Rates_of_COVID-19_Cases_or_Deaths_by_Age_Group_and_Vaccination_Status.csv", # Put file name on your computer here
+  header = TRUE,
+  sep = ","
+)
+
+#data cleaning
+data <- filter(data, outcome == "death")
+data <- data[, c('Age.group', 'MMWR.week', 'Vaccinated.with.outcome', 'Unvaccinated.with.outcome')]
+
+data <- subset(data, Age.group != "all_ages_adj")
+
+data <- data[rep(seq_len(nrow(data)), each = 2), ]
+data$Vaccination_Status <- rep(c("Vaccinated", "Unvaccinated"), length.out=nrow(data))
+
+data$Death <- ifelse(data$Vaccination_Status == "Vaccinated", data$Vaccinated.with.outcome, data$Unvaccinated.with.outcome)
+data <- data[, c('Age.group', 'MMWR.week', 'Vaccination_Status', 'Death')]
+
+data$Age.group <- factor(data$Age.group , levels=c("5-11", "12-17", "18-29", "30-49", "50-64","65-79","80+"))
+
+data$MMWR.week <- as.factor(data$MMWR.week)
+
+data$Vaccination_Status <- as.factor(data$Vaccination_Status)
+
+data <- na.omit(data)
+
+# Box Cox Transformation
+data$tDeath <- data$Death + 0.0001
+SGM <- psych::geometric.mean(data$tDeath)
+data <- data %>%
+  mutate(
+    logDeath = log(tDeath),
+    bLogDeath = SGM*log(tDeath),
+    bcDeath = (tDeath^0.2222 - 1) /(0.2222 * SGM^(0.2222-1))
+  )
+
+```
+
+
+# Executive Summary
+
+There are many different factors that can determine whether or not someone may survive an infection with COVID-19. In our study, we took CDC data on COVID-19 deaths and compared the death totals to the age group of the case, whether or not that case was vaccinated to protect against severe COVID-19, and when that death took place, as we have seen throughout the pandemic the coronavirus comes in waves, and during those waves people have a higher chance of infection and/or death than in between those waves.
+
+As a result of our study, we found all three factors contributed to the number of deaths in a given week, with vaccination status contributing the most to the variation in number of deaths. Age group also had a large effect, and the week the death occurred had the least effect on number of deaths, though it was still statistically significant.
+
+
+# Introduction
+
+In 2020, a new coronavirus, COVID-19, spread out around the world. COVID-19 affects different people in different ways. Some people may have mild symptoms like fever or cough, and some may have difficulty breathing or turn into more serious illnesses. 
+
+According to the CDC Data Tracker, the United States has had 991,439 people died since COVID-19 first arrived in this country. Though the World Health Organization (WHO) indicated that anyone can get sick with COVID-19 and become seriously ill or die at any age, they also point out older people are more likely to develop serious illnesses. Thus, we want to see whether age group is an important factor related to deaths caused by COVID-19.
+
+Since there are 82.5% of people older than 5 years old who have at least received one vaccination dose in the U.S., we can also explore the effectiveness of vaccines. Do vaccines indeed help to reduce death cases? 
+
+To this end, we want to explore the effect age, immunization status, and time has on COVID-19 related deaths.
+
+\newpage
+
+# Literature Review
+
+We use _Rates of COVID-19 Cases or Deaths by Age Group and Vaccination Status_ dataset[^1] which was collected by the CDC COVID-19 Response, Epidemiology Task Force. Based on our research question, we did some data cleaning and reorganized the format of our data. We filtered and selected all the death outcomes, kept age group and week, and created a new column named Vaccination Status, and assigned case numbers to the Death column.
+
+[^1]: Data available at [https://data.cdc.gov/Public-Health-Surveillance/Rates-of-COVID-19-Cases-or-Deaths-by-Age-Group-and/3rge-nu2a](https://data.cdc.gov/Public-Health-Surveillance/Rates-of-COVID-19-Cases-or-Deaths-by-Age-Group-and/3rge-nu2a)
+
+
+```{r boxplot, fig.cap="Box Plot With Age Group and Vaccination Status", fig.width=10, fig.height=8,fig.pos="H"}
+
+ggplot(
+  data = data,
+  mapping = aes(
+    x = Age.group,
+    y = Death,
+    fill = Vaccination_Status
+) )+
+  geom_boxplot() +
+  theme_bw() +
+  xlab("Age Group") +
+  ylab("Number of Death") +
+  labs(
+fill = "Vaccination Status" )+
+  theme(
+    legend.position = "right",
+    text = element_text(size = 14)
+)
+
+```
+[^1]: Data available at [https://data.cdc.gov/Public-Health-Surveillance/Rates-of-COVID-19-Cases-or-Deaths-by-Age-Group-and/3rge-nu2a](https://data.cdc.gov/Public-Health-Surveillance/Rates-of-COVID-19-Cases-or-Deaths-by-Age-Group-and/3rge-nu2a)
+
+Figure \ref{fig:boxplot} provides the box plot with the age group and vaccination status. In examining the box plot, we can see there is rare death numbers for people under 30 regardless of vaccination status. For people above 30 years old, vaccination status starts to show its effect. Unvaccinated people have larger numbers of deaths than vaccinated in each age group. There are rare death numbers for vaccinated people in the 30-49 age group. Figure \ref{fig:boxplot} obviously shows that the death cases increase as the age group increase.
+
+```{r descStats}
+data %>%
+  dplyr::group_by(Age.group, Vaccination_Status) %>%
+  summarize(
+    n = n(),
+    min = min(Death),
+    Q1 = quantile(Death, probs = c(0.25)),
+    med = median(Death),
+    Q3 = quantile(Death, probs = c(0.75)),
+    max = max(Death),
+    mad = mad(Death),
+    sam = mean(Death),
+    sd = sd(Death),
+    skew = psych::skew(Death),
+    kurtosis = psych::kurtosi(Death)
+) %>%
+knitr::kable(
+  caption = "Summary Statistics for COVID-19 Deaths",
+  digits = 3,
+  format.args = list(big.mark = ","),
+  align = rep('c', 13),
+  col.names = c("Age Group", "Vaccination Status", "n", "Min", "Q1", "Median", "Q3", "Max", "MAD",
+                "SAM", "SASD", "Sample Skew","Sample Ex. Kurtosis"),
+  booktabs = TRUE
+)  %>%
+kableExtra::kable_styling(
+  font_size = 12,
+  latex_options = c("HOLD_position", "scale_down")
+)
+
+```
+
+Table \ref{tab:descStats} shows the value of various descriptive statistics broken out by age group and vaccination status. Visually, we can see that there are less than 20 deaths in each age group under 18. For the age group 18-29, deaths of vaccinated people are 18, but deaths of unvaccinated people are 132 which is even more than the deaths of vaccinated people in the 30-49 age group. We can also see this in the bar graph of Figure \ref{fig:bargraph}. For people above 80 years old, the vaccines seem not to have a significant effect as other age groups.  
+
+```{r bargraph, fig.cap="Bar Graph of Death Numbers in Various Age Groups", fig.width=10, fig.height=8,fig.pos="H"}
+
+ggplot(data, aes(x = Age.group, y = Death, fill = Vaccination_Status)) +
+  geom_col(position = "dodge")
+
+```
+
+
+# Methods
+
+In order to assess our SRQ, we have determined which factors from the CDC data set will have an impact on the primary response, total number of deaths. We see in Figure \ref{fig:hasseDiagram} that Vaccination Status (vaccinated or not), age group, and point in time factor into how many deaths there are. Age and Vaccination Status also have an interaction with each other, and time point is independent from those two factors.
+
+```{r hasseDiagram, fig.cap="Hasse Diagram for COVID-19 Deaths Study", fig.height=2, fig.pos="H"}
+modelLabels <- c("1 Number of Deaths 1", "2 Vaccination Status 1", "5 Age Group 4", "47 Time Point 46", "10 Vaccination Status × Age Group 4", "470 Death Observations 414")
+modelMatrix <- matrix(
+  data = c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE),
+  nrow = 6,
+  ncol = 6,
+  byrow = FALSE
+)
+hasseDiagram::hasse(
+ data = modelMatrix,
+ labels = modelLabels
+)
+```
+Based off the outline of our study, ANOVA models appear to be appropriate. We will conduct our study using an ANOVA F-test: Factorial Design Model, which allows us to compare each individual factor's impact on total deaths, and in this case, how the interaction between Vaccination Status and Age contribute to total deaths.
+
+For our study, we will control our overall Type I risk at 15%, and use a personal unusualness threshold of 10 percent. Any factor (or interaction between two) within our unusualness threshold will be considered statistically significant as having an impact on number of deaths.
+
+# Results
+
+To answer our SRQ, we will seek to use the parametric shortcut known as the ANOVA F test. There are three assumptions that our data must satisfy to use this approach: residuals must follow a Gaussian distribution, homoscedasticity, and independence of observations.
+```{r Fit Model}
+covidModelt <- aov(
+  formula = bcDeath ~ Age.group*Vaccination_Status + MMWR.week,
+  data = data
+)
+```
+
+
+## Assumptions
+
+When we ran our assumptions, we needed to perform a transformation to our response of adding .0001 and performing a "Box-Cox" transformation. Our data appeared to have a skew due to the presence of zeros for the 5-11 and 12-17 categories in terms of death. The Box-Cox transformation fixes the problem of having many zeroes in our response.
+
+```{r assumptionPlots, fig.cap="Assessing Assumptions for COVID-19 Deaths Study", fig.subcap=c("Gaussian QQ Plot", "Tukey-Anscombe Plot"), fig.ncol=2, out.width="50%", fig.pos="H"}
+car::qqPlot(
+  x = residuals(covidModelt),
+  distribution = "norm",
+  envelope = 0.85,
+  id = FALSE,
+  pch = 20,
+  ylab = "Residuals"
+)
+
+ggplot(
+  data = data.frame(
+    residuals = residuals(covidModelt),
+    fitted = fitted.values(covidModelt)
+  ),
+  mapping = aes(x = fitted, y = residuals)
+) +
+  geom_point(size = 2) +
+  geom_hline(
+    yintercept = 0,
+    linetype = "dashed",
+    color = "grey50"
+  ) +
+  geom_smooth(
+    formula = y ~ x,
+    method = stats::loess,
+    method.args = list(degree = 1),
+    se = FALSE,
+    size = 0.5
+  ) +
+  theme_bw() +
+  xlab("Fitted values") +
+  ylab("Residuals")
+```
+Per Figure \ref{fig:assumptionPlots}, after our transformation, it appears we have a reasonable Gaussian distribution, at worst "questionable". The Tukey-Anscombe plot also is quite questionable, but the blue line is relatively straight and not performing against expectations consistent with our data.
+
+```{r indChart, fig.cap="Independence of Observations for COVID-19 Deaths Study", fig.height=2, fig.pos="H"}
+ggplot(
+  data = data,
+  mapping = aes(
+    x = MMWR.week,
+    y = Death
+  )
+) +
+  geom_point(size = 0.5) +
+  geom_line() +
+  theme_bw() +
+  xlab("Measurement order") +
+  ylab("Deaths") +
+  facet_wrap(
+    . ~ Age.group
+  )
+```
+Since we know the order of observations a la knowing the MMWR of the data, we can also form an “independence of observations chart”, shown as Figure \ref{fig:indChart} which is split into separate age groups. As expected, the 5-11 and 12-17 groups seem to make our data lopsided, but given a larger sample size, it would be possible that those groups would conform with the rest. Thus, we can assume that the independence of observations is satisfied.
+
+```{r intChart, fig.cap="Independence of Observations for COVID-19 Deaths Study", fig.height=2, fig.pos="H"}
+ggplot(
+  data = data,
+  mapping = aes(
+    x = Age.group,
+    y = bcDeath,
+    shape = Vaccination_Status,
+    color = Vaccination_Status,
+    linetype = Vaccination_Status,
+    group = Vaccination_Status
+  )
+) +
+  stat_summary(fun = "mean", geom = "point", size = 3) +
+  stat_summary(fun = "mean", geom = "line", size = 1) +
+  geom_jitter(width = 0.1, height = 0.1, alpha = 0.25, size = 1) +
+  ggplot2::theme_bw() +
+  xlab("Age Group") +
+  ylab("Deaths") +
+  labs(
+    color = "Vaccination Status",
+    shape = "Vaccination Status",
+    linetype = "Vaccination Status"
+  ) +
+  scale_color_manual(values = c("red", "blue")) +
+  theme(
+    legend.position = "bottom",
+    text = element_text(size = 12)
+  )
+```
+
+Finally, when looking at our interactions plot in Figure \ref{fig:intChart}, we can see that there is consistency between the two factors age group and vaccination status, meaning that there seems to be no confounding. While we also included time (MMWR) as a factor in our assessment, we are treating it as it does not interact with the other factors, thus it is not included in the interaction plot. This assumption is also satisfied.
+
+After consideration, we can put the assumptions into context and assume that overall, they are satisfied, which will allow us to perform the ANOVA F-shortcut: Factorial Designs Model.
+
+## Omnibus
+```{r ANOVAtable}
+parameters::model_parameters(
+  model = covidModelt,
+  omega_squared = "partial", # Notice the use of partial
+  eta_squared = "partial",
+  epsilon_squared = "partial",
+  type = 1, # Use 1, 2, or 3 for the Type of SSQs you want
+  drop = "(Intercept)", # Drop an unneeded row for ANOVA
+  verbose = FALSE # Makes the function "quiet"
+) %>%
+  dplyr::mutate(
+    p = ifelse(
+      test = is.na(p),
+      yes = NA,
+      no = pvalRound(p)
+    )
+  ) %>%
+  knitr::kable(
+    digits = 4,
+    col.names = c("Source", "SS", "df", "MS", "F", "p-value",
+                  "Partial Omega Sq.", "Partial Eta Sq.", "Partial Epsilon Sq."),
+    caption = "ANOVA Table for COVID-19 Deaths Study",
+    align = c('l',rep('c',8)),
+    booktab = TRUE
+  ) %>%
+  kableExtra::kable_styling(
+    bootstrap_options = c("striped", "condensed"),
+    font_size = 12,
+    latex_options = c("scale_down", "HOLD_position")
+)
+```
+Per Table \ref{tab:ANOVAtable}, we would decide to reject the null hypothesis for each of the main factors and for the interaction term, as all are statistically significant for having an impact on the total number of COVID-19 related deaths. Of these, Vaccination Status appears to explain most of the variation in death rate.
+
+## Marginal Means
+
+
+```{r margMean}
+
+covidPHMeans <- emmeans::emmeans(
+  object = covidModelt,
+  # The order of factors does not really matter for this
+  specs = pairwise ~ Age.group | Vaccination_Status,
+  adjust = "tukey", # Where you specify your chosen method
+  level = 0.85 # 1--Type I Risk
+)
+as.data.frame(covidPHMeans$emmeans) %>%
+  knitr::kable(
+    digits = 4,
+    col.names = c("Age group", "Vaccine status", "Marginal Mean","SE", "DF",
+                  "Lower Bound","Upper Bound"),
+    caption = "Marginal Means-Tukey 85\\% Adjustment",
+    format = "latex",
+    align = rep("c", 7),
+    booktabs = TRUE
+  ) %>%
+  kableExtra::kable_styling(
+    bootstrap_options = c("striped", "condensed"),
+    font_size = 12,
+    latex_options = c("HOLD_position")
+)
+
+```
+
+From the Table \ref{tab:margMean}, we can see that factor level of age groups effects estimates. At level age at 65-79 accumulated death at a rate of 1057 times. Age above 80 was 708 times related to death rate.
+
+# Discussion
+
+Our research question was the effect of age and the vaccinated status on covid mortality. From the data of our study, we can conclude that the highest mortality rate was observed in the age group 65-79 years among those who were not vaccinated.
+
+Our study has two limitations. First, the data do not include children under 5 years of age, which would make our data incomplete. We could break down the age and count the prevalence in children under 5 years of age. Second, the data do not include vaccine types. In a future improvement, we could compare mortality rates based on the vaccination population for different types of vaccines. This will give us a more accurate picture of the relationship between vaccine status and mortality.
+
+
+
+
+
+# References
+
+COVID Data Tracker. _Trends in Number of COVID-19 Cases and Deaths in the US Reported to CDC, by State/Territory_. Centers for Disease Control and Prevention. Retrieved from https://covid.cdc.gov/covid-data-tracker/#trends_dailydeaths.
+
+_Coronavirus disease (COVID-19)_. World Health Organization. Retrieved from https://www.who.int/health-topics/coronavirus#tab=tab_3.
+
+CDC COVID-19 Response, Epidemiology Task Force (April 15, 2022). _Rates of COVID-19 Cases or Deaths by Age Group and Vaccination Status_. Centers for Disease Control and Prevention. Retrieved from https://data.cdc.gov/Public-Health-Surveillance/Rates-of-COVID-19-Cases-or-Deaths-by-Age-Group-and/3rge-nu2a.
+
+
+
+\newpage
+
+# Author Contributions
+
+
+The authors of this report would like to acknowledge their individual contributions to the report.
+
++ Peter contributed to the executive summary, methods, and general organization of the report.
++ Haichen contributed to data wrangling, introduction and literature review.
++ Daniel contributed to the assumptions and results of our data.
++ Ailin contributed to results, marginal means, and discussion.
+
+
+
+
+
+
+\newpage
+
+# Code Appendix
+
+```{r codeAppendix, ref.label = knitr::all_labels(), echo = TRUE, eval = FALSE}
+
+```
