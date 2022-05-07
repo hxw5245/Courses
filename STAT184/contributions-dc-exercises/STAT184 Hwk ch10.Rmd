@@ -1,0 +1,123 @@
+---
+title: "STAT 184 Homework Exercises" 
+subtitle: "DataComputing Chapters 10"
+author: "Haichen Wei"
+output: html_notebook
+---
+
+## Assigned Exercises
+
+- DC Chapter 10 Exercises: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7  
+
+## Front Matter
+
+```{r}
+# clean up workspace environment
+rm(list = ls())
+
+# all packages used for the assignment
+library(mosaic)
+library(tidyverse)
+
+```
+
+
+
+## Chapter 10 Exercises
+
+### Problem 10.1
+
+1. Summary Function
+2. Data Verb
+3. Transformation
+4. Reduction Function
+5. Data Verb
+6. Summary Function
+7. Data Verb
+8. Summary Function
+
+### Problem 10.2
+
+1. mutate()
+2. arrange()
+3. select()
+4. filter()
+5. group by()
+   summarise()
+
+### Problem 10.3
+
+1. nrow()
+2. name()
+3. help()
+4. library()
+5. group_by()
+
+### Problem 10.4
+
+1. BabyNames %>% filter(sex=="F") %>% arrange(count) 
+2. BabyNames %>% filter(year > 1990, sex=="F")
+3. BabyNames %>% filter(year %in% c(2012), sex=="M")
+4. BabyNames %>% summarise(total=n())
+5. BabyNames %>% select(name, count)
+
+### Problem 10.5
+
+1. 
+```{r}
+library(DataComputing)
+data("Minneapolis2013")
+Minneapolis2013 %>%
+  group_by(First, Second) %>%
+  summarise(total = n())
+```
+
+2. 
+```{r}
+Minneapolis2013 %>%
+  group_by(First, Second) %>%
+  summarise(total = n()) %>%
+  arrange(desc(total)) %>%
+  head(3)
+```
+
+3. 
+```{r}
+Minneapolis2013 %>%
+  filter(First == "OLE SAVIOR") %>%
+  group_by(Second) %>%
+  summarise(total = n()) %>%
+  arrange(desc(total)) %>%
+  head(3)
+```
+
+### Problem 10.6
+
+1. Color J is the largest on average (in terms of carats).
+```{r}
+library(ggplot2)
+data("diamonds")
+help("diamonds")
+diamonds %>% 
+  group_by(color) %>% 
+  summarise(avg = mean(carat)) %>%
+  arrange(desc(avg))
+  head(1)
+```
+2. VVS1 has the largest average “table” per carat.
+```{r}
+diamonds %>% 
+  group_by(clarity) %>% 
+  summarise(avg2 = mean(table/carat)) %>%
+  arrange(desc(avg2))
+  head(1)
+```
+
+### Problem 10.7
+
+```{r}
+Minneapolis2013 %>%
+  group_by(First) %>%
+  summarise(total = n()) %>%
+  mutate(candidate = ifelse(total < 5000, "minor", "major"))
+```

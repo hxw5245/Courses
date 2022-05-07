@@ -1,0 +1,206 @@
+---
+title: "Street or Road?"
+author: "Haichen Wei"
+date: "Nov 19, 2020"
+output: 
+    html_notebook
+---
+
+
+# Set Up
+
+### Clean up environment and load packages
+```{r}
+# clean up the RStudio environment 
+rm(list = ls())
+
+# load all packages here: `mosaic`, `tidyverse`, `lubridate`, and all others used
+library(tidyverse)
+library(mosaic)
+library(DataComputing)
+```
+
+
+### Solved Example
+
+```{r}
+download.file(url="http://tiny.cc/dcf/CMS_ProvidersSimple.rds",
+              destfile = "YourNameForTheFile.rds")
+DataTable <- readRDS("YourNameForTheFile.rds")
+Addresses <- read_csv("http://tiny.cc/dcf/street-addresses.csv")
+Sample <- 
+  Addresses %>%
+  sample_n(size = 50)
+Sample
+```
+
+```{r}
+Matches <- 
+  Sample %>%
+  filter(grepl(pattern = "PO", address))
+Matches
+```
+
+```{r}
+Dont <- 
+  Sample %>%
+  filter( ! grepl(pattern = "PO", address))
+Dont
+```
+
+```{r}
+pattern <- "BOX\\s+(\\d+)"
+
+Matches <- 
+  Sample %>% 
+  filter(grepl(pattern, address))
+Matches
+
+Dont <-
+  Sample %>%
+  filter( ! grepl(pattern, address))
+Dont
+```
+
+```{r}
+BoxNumbers <- 
+  Sample %>%
+  filter(grepl(pattern, address)) %>%
+  tidyr::extract(address, into = "boxnum", regex = pattern)
+BoxNumbers
+```
+
+# Back to the Streets
+
+### explain each line of code in English
+
+```{r}
+# make a regular expression string named pattern, the string inside parentheses is pattern that we want to extract, the string means that a ST or RD or ROAD in an address
+pattern <- "(ST|RD|ROAD)" 
+
+#create a new data frame table named LeftOvers
+LeftOvers <-
+  Addresses %>% 
+  filter( ! grepl(pattern, address), # Find cases that don’t contain a ST or RD or ROAD in an address
+          ! grepl("\\sAPT|UNIT\\s[\\d]+$", address), # Find cases that don’t contain APT or UNIT (within the space in front and behind it) which followed by one or more digits in an address
+          ! grepl(" BOX ", address) # Find cases that don’t contain the BOX(within the space in front and behind it) in an address
+          )
+LeftOvers
+```
+
+### expand to match several more patterns (at least 12 total)
+
+```{r}
+# 1. Find cases that contain LN or LANE in an address
+LANE <-
+  Addresses %>% 
+  filter( grepl("LN|LANE", address)) 
+LANE
+# 2.Find cases that contain AVE or AVENUE in an address
+AVENUE <-
+  Addresses %>% 
+          filter(grepl("AVE|AVENUE", address))
+AVENUE
+# 3. Find cases that contain the TRAIL or TRL in an address
+TRAIL <-
+  Addresses %>% 
+  filter(grepl("TRAIL|TRL", address)) 
+TRAIL
+# 4. Find cases that contain COURT or CT in an address
+COURT <-
+  Addresses %>% 
+  filter(grepl("COURT|CT", address))
+COURT
+# 5. Find cases that contain CIRCLE or CIR in an address
+CIRCLE <-
+  Addresses %>% 
+  filter(grepl("CIRCLE|CIR", address))
+CIRCLE
+# 6. Find cases that contain DR or DRIVE in an address
+DRIVE <-
+  Addresses %>% 
+  filter(grepl("DR|DRIVE", address))
+DRIVE
+# 7. Find cases that contain WAY in an address
+WAY <-
+  Addresses %>% 
+  filter(grepl("WAY", address))
+WAY
+# 8. Find cases that contain PATH in an address
+PATH <-
+  Addresses %>% 
+  filter(grepl("PATH", address))
+PATH
+# 9. Find cases that contain POINT or PT in an address
+POINT <-
+  Addresses %>% 
+  filter(grepl("POINT|PT", address))
+POINT
+# 10. Find cases that contain BLVD or Boulevard in an address
+Boulevard <-
+  Addresses %>% 
+  filter(grepl("BLVD|Boulevard", address))
+Boulevard
+# 11. Find cases that contain PLACE or PL in an address
+PLACE <-
+  Addresses %>% 
+  filter(grepl("PLACE|PL", address))
+PLACE
+# 12. Find cases that contain PKWY or Parkway in an address
+Parkway <-
+  Addresses %>% 
+  filter(grepl("PKWY|Parkway", address)) 
+Parkway
+```
+
+### provide a table in descending order of popularity for the street name identifiers you found
+
+```{r}
+LANE_NUM <- 
+  LANE %>% summarise(total=n()) %>% mutate(name = "LN") 
+
+AVENUE_NUM <- 
+  AVENUE %>% summarise(total=n()) %>% mutate(name = "AVE") 
+  
+TRAIL_NUM <- 
+  TRAIL %>% summarise(total=n()) %>% mutate(name = "TRAIL")
+  
+CIRCLE_NUM <- 
+  CIRCLE %>% summarise(total=n()) %>% mutate(name = "CIRCLE")
+  
+COURT_NUM <- 
+  COURT %>% summarise(total=n()) %>% mutate(name = "COURT")
+  
+DRIVE_NUM <- 
+  DRIVE %>% summarise(total=n()) %>% mutate(name = "DR") 
+  
+PATH_NUM <- 
+  PATH %>% summarise(total=n()) %>% mutate(name = "PATH") 
+  
+WAY_NUM <- 
+  WAY %>% summarise(total=n()) %>% mutate(name = "WAY") 
+  
+POINT_NUM <- 
+  POINT %>% summarise(total=n()) %>% mutate(name = "POINT") 
+  
+Boulevard_NUM <- 
+  Boulevard %>% summarise(total=n()) %>% mutate(name = "BLVD") 
+  
+PLACE_NUM <- 
+  PLACE %>% summarise(total=n()) %>% mutate(name = "PL") 
+ 
+Parkway_NUM <- 
+  Parkway %>% summarise(total=n()) %>% mutate(name = "PKWY")
+  
+Streets <- rbind(LANE_NUM, AVENUE_NUM, TRAIL_NUM, CIRCLE_NUM, COURT_NUM, DRIVE_NUM, PATH_NUM, WAY_NUM, POINT_NUM, Boulevard_NUM, PLACE_NUM, Parkway_NUM)
+PopStName <-
+Streets %>% 
+  arrange( desc(total) )
+PopStName
+```
+
+### use ggplot to construct a bar chart in descending order of popularity for the street name identifiers you found.
+
+```{r}
+ggplot(data=PopStName,aes(x=reorder(name,total),y=total ,fill=name)) + geom_bar(stat='identity',position='stack', width=.9) 
+```

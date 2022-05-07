@@ -1,0 +1,108 @@
+---
+title: "STAT 184 Homework Exercises"
+author: "Haichen Wei"
+subtitle: DataComputing Chapters 13 & 16
+output:
+  html_document:
+    df_print: paged
+---
+
+## Assigned Exercises
+
+- DC Chapter 13 Exercises: 13.1, 13.2
+- DC Chapter 16 Exercises: 16.1, 16.2
+
+## Front Matter
+
+```{r}
+# clean up workspace environment
+rm(list = ls())
+
+# all packages used for the assignment
+library(mosaic)
+library(tidyverse)
+library(DataComputing)
+library(lubridate)
+```
+
+
+
+## Chapter 13 Exercises
+
+### Problem 13.1
+
+```{r}
+BabyNames %>%
+  group_by(name) %>%
+  summarise(total = sum(count)) %>%
+  filter(rank(desc(total)) <= 5)
+```
+
+### Problem 13.2
+
+1. 
+```{r}
+Part1<-
+BabyNames %>%
+group_by(year, name) %>% 
+summarise(yearCount = sum(count)) %>%
+mutate( nameRank = rank(desc(yearCount)), ranking = ifelse( nameRank <= 100, "Top_100", "Below") )
+Part2<-
+Part1 %>%
+group_by(year, ranking) %>% 
+summarise(total = sum(yearCount)) %>%
+arrange(desc(year))
+Part2
+```
+
+2. 
+```{r}
+Fraction <-
+Part2 %>%
+  spread(key = ranking, value = total) %>%
+  mutate(ratio = Top_100 / (Below+Top_100))
+Fraction
+```
+
+3. 
+```{r}
+ggplot(data = Fraction, aes(x=year, y=ratio)) + geom_line() + ggtitle("Diversity of Name Over Time")
+```
+
+
+## Chapter 16 Exercises
+
+### Problem 16.1
+
+1. 
+```{r}
+lubridate::ymd("1999-04-07") - lubridate::mdy("April 30, 1777")
+```
+2. 
+```{r}
+lubridate::ymd("1999-04-07") - lubridate::mdy("06-23-1912")
+```
+3. 
+```{r}
+lubridate::ymd("1999-04-07") - lubridate::dmy("3 March 1847")
+```
+4. 
+```{r}
+lubridate::ymd_hm("1999-04-07 7:00") - lubridate::mdy_hm("Nov. 11th, 1918 at 11:00 am")
+```
+5. 
+```{r}
+lubridate::ymd("1999-04-07") - lubridate::mdy("July 20, 1969")
+```
+
+### Problem 16.2
+
+1. readr::parse_number()
+2. neither
+3. neither
+4. readr::parse_number()
+5. readr::parse_number()
+6. readr::parse_number()
+7. neither
+8. both
+9. readr::parse_number()

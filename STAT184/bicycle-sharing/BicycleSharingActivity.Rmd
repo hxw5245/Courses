@@ -1,0 +1,176 @@
+---
+title: "Bicycle Sharing"
+author: "Haichen Wei"
+date: "Oct 25, 2020"
+output: 
+    html_notebook:
+    fig_height: 6
+    fig_width: 10
+---
+
+
+# Set Up
+
+### Clean up environment and load packages
+```{r}
+# clean up the RStudio environment 
+rm(list = ls())
+
+# load all packages here: `mosaic`, `tidyverse`, `lubridate`, and all others used
+library(tidyverse)
+library(mosaic)
+library(lubridate)
+```
+
+### Data Intake
+
+The code chunk below loads the data for you, but you should study each line to understand what it's doing.
+
+```{r}
+### Load the station data set into our RStudio environment as described in the text
+Stations <- mosaic::read.file("http://tiny.cc/dcf/DC-Stations.csv")
+
+### Load the station data set into our RStudio environment as described in the text
+
+# data_site <- "http://tiny.cc/dcf/2014-Q4-Trips-History-Data.rds"          # full data with 600k rows (uncomment to use)
+data_site <- "http://tiny.cc/dcf/2014-Q4-Trips-History-Data-Small.rds"    # small data with 10k rows 
+
+Trips <- readRDS(gzcon(url(data_site)))
+
+
+### Backup code if you need to download the .rds file from the web and load a local version
+
+# Trips <- readRDS("2014-Q4-Trips-History-Data-Small.rds")
+# Trips <- readRDS("2014-Q4-Trips-History-Data.rds")
+
+```
+
+
+
+### Always inspect the data tables when you load them
+
+```{r}
+summary(Stations)
+summary(Trips)
+```
+
+### Plot check-out times. (reproduce Figure 18.1: Use of shared bicycles over the three months in Q4.)
+
+```{r}
+Trips %>%
+  ggplot(aes(x=sdate)) + geom_density(fill="gray", color=NA)
+```
+
+# Section: How Long?
+
+Make box & whisker plot showing the distribution of rental duration by client type.  As instructed in the text, make sure you either configure your scale or use a filter to suppress outliers from dictating the axis range.
+
+```{r}
+Trips %>%
+  ggplot(aes(x=client, y=as.numeric((edate - sdate)/60))) + geom_boxplot() + ylab("dur/60") + ylim(0,60)
+```
+
+# Section: When are bikes used?
+
+Note: You'll use several functions that begin with `lubridate::` this means that those functions have come from the `lubridate` R package, which makes it easy to work with dates in R.  The activity template instructed you to load this package already, but you should use Google or the RStudio help to get a sense of the kind of things this package is designed to do.
+
+
+##### Day of the year (1 to 365)
+
+```{r}
+Trips %>%
+  mutate(H = lubridate::yday(sdate)) %>%
+  ggplot(aes(x = H)) +
+  geom_density(fill="gray", adjust=2)
+```
+
+##### Day of the week (Sunday to Saturday)
+
+```{r}
+Trips %>%
+  mutate(H = lubridate::wday(sdate)) %>%
+  ggplot(aes(x = H)) +
+  geom_density(fill="gray", adjust=2)
+```
+
+##### Hour of the day (0 to 24)
+
+```{r}
+Trips %>%
+  mutate(H = lubridate::hour(sdate)) %>%
+  ggplot(aes(x = H)) +
+  geom_density(fill="gray", adjust=2)
+```
+
+##### Minute in the hour (0 to 60)
+
+```{r}
+Trips %>%
+  mutate(H = lubridate::minute(sdate)) %>%
+  ggplot(aes(x = H)) +
+  geom_density(fill="gray", adjust=2)
+```
+
+
+### Group the bike rentals by hour, weekday, & client type
+
+```{r}
+Trips %>%
+  mutate(H = lubridate::hour(sdate), W=lubridate::wday(sdate)) %>%
+  group_by(H, W, client) %>%
+  summarise(count = n()) %>%
+  ggplot(aes(x=H, y=count)) + geom_point() + geom_line(aes(color=H, group=W)) + facet_wrap(~ client)
+```
+
+
+### Construct a similar plot using density rather than frequency
+
+```{r}
+Trips %>%
+  mutate(H = lubridate::hour(sdate), W=lubridate::wday(sdate)) %>%
+  group_by(H, W, client) %>%
+  summarise(count = n()) %>%
+  ggplot(aes(x=H)) + geom_density() + facet_wrap(~ client)
+```
+
+
+# Section: How Far?
+
+We want to calculate the distance between stations using the `haversine()` function.  The `source()` function actually runs an R script found at some URL.  Use a web browser to visit this URL and read about the function (it's only a few lines).
+
+```{r}
+source("http://tiny.cc/dcf/haversine.R")
+```
+
+```{r}
+Simple <-
+  Stations %>%
+  select(name, lat, long) %>%
+  rename(sstation=name)
+Simple2 <-
+  Simple %>%
+  rename(estation=sstation, lat2=lat, long2=long) 
+Simple2 %>%
+  full_join(merge(head(Simple, 4), head(Simple2, 3), by=NULL))
+
+StationPairs <- merge(Simple, Simple2, by=NULL)
+
+PairDistances <-
+  StationPairs %>%
+  mutate(distance = haversine(lat, long, lat2, long2)) %>%
+  select(sstation, estation, distance)
+
+RideDistances <-
+  Trips %>%
+  inner_join(PairDistances)
+RideDistances %>%
+  ggplot(aes(x=distance)) + geom_density(color="blue") + xlim(0,15) + xlab("Trip Distance(km)") + geom_density(data=PairDistances, aes(x=distance), fill="pink", color="pink", alpha=0.5)
+```
+
+
+
+
+
+
+
+

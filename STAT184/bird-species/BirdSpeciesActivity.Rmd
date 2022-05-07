@@ -1,0 +1,201 @@
+
+---
+title: "Activity: Bird Species"
+author: "Haichen Wei"
+date: "Oct 15, 2020"
+output: html_notebook
+---
+
+
+# Set Up
+
+```{r}
+# Load `tidyverse` and `DataComputing` packages
+
+library(tidyverse)
+library(mosaic)
+library(DataComputing)
+
+# Load the `OrdwayBirds` data set into your RStudio environment from the `DataComputing` package
+
+data("OrdwayBirds")
+
+# Show a few commands used to inspect the data set a few different ways
+
+help(OrdwayBirds)
+View(OrdwayBirds)
+summary(OrdwayBirds)
+
+```
+
+# Activity
+
+When you're finished with this activity, you will have a graph that shows what time of year various species appear at the Katherine Ordway Natural History Study Area in Inver Grove Heights, MN.
+
+### Task 0
+
+Before we begin, the book gives us some instructions to select a few key variables and clean up the date formatting.  Use the commands given in the book, but be sure to study the functions used so you know what is happening.  In this case, we select `SpeciesName`, `Month`, and `Date`. Then a `mutate()` command converts each variable to character, and then converts the resulting "character string" to a number.
+
+```{r}
+# Get the data table & clean up dates (see Data Computing eBook Task 0)
+
+OrdwayBirds <-
+  OrdwayBirds %>%
+  select( SpeciesName, Month, Day ) %>%
+  mutate( Month = as.numeric(as.character(Month)), 
+          Day = as.numeric(as.character(Day)))
+
+# Inspect resulting data
+summary(OrdwayBirds)
+
+```
+
+
+
+### Task 1
+
+```{r}
+# unique species in original data (including mis-spellings)
+
+OrdwayBirds %>%
+  summarise(total = n_distinct(SpeciesName, na.rm = TRUE))
+
+# Load the `OrdwaySpeciesNames` data set into your RStudio environment from the `DataComputing` package
+
+data("OrdwaySpeciesNames")
+
+# inspect `OrdwaySpeciesNames`
+
+summary(OrdwaySpeciesNames)
+View(OrdwaySpeciesNames)
+
+# unique species in the clean list
+
+OrdwaySpeciesNames %>%
+  summarise(total = n_distinct(SpeciesNameCleaned, na.rm = TRUE))
+
+```
+
+
+### Task 2
+  
+• SpeciesName was used for matching cases.
+
+• Corrected the mis-spellings, add month and day variables
+
+```{r}
+# inner join (see Data Computing eBook Task 2)
+
+Corrected <-
+  OrdwayBirds %>%
+  inner_join( OrdwaySpeciesNames ) %>% 
+  select( Species = SpeciesNameCleaned, Month, Day ) %>%
+  na.omit()  # cleaned up the missing ones
+
+# inspect the data after the join
+
+summary(Corrected)
+View(Corrected)
+
+```
+
+
+### Task 3
+
+We want to identify the top 5-6 bird species sighted at the Katherine Ordway Natural History Study Area.
+
+```{r}
+# count sightings by species in descending order
+# a hint on Data Computing eBook Task 3 recommends displaying the top 10 species to choose our threshold
+
+TopTen <-
+  Corrected %>%
+  group_by(Species) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>%
+  head(10)
+TopTen
+
+# define a sightings threshold; produce a table with only birds belonging to major species
+
+TopSix <-
+  TopTen %>% 
+  head(n = 6) %>% 
+  .$Species
+TopSix
+
+Majors <-
+  Corrected %>% 
+  filter(Species %in% TopSix)
+Majors
+```
+
+
+### Task 4
+
+We now want to produce a month-by-month count for each of the major species, and then construct a chart to tell the story of what time of year the various species appear.
+
+```{r}
+# prepare glyph-ready data table called `ByMonth`
+
+ByMonth <- 
+  Majors %>%
+  group_by(Species, Month) %>%
+  summarise(count = n()) %>%
+  arrange(Month)
+ByMonth
+```
+
+Now, using `barGraphHelper()` in the console, we can configure a reasonable graph and choose "show expression" to get `ggplot2` that can be embedded in our report. If you couldn't use `barGraphHelper()`, then you may use the following ggplot() command. 
+
+
+```{r}
+# ggplot command
+
+ByMonth %>%
+  ggplot(aes(x = Month, y = count , fill = Species)) + 
+  geom_bar(stat = 'identity', position = 'dodge', width = .9) 
+
+```
+
+According to the graph, we can answer the questions posed:
+
+##### 1. Which species are present year-round?  
+
+American Goldfinch, Black-capped Chickadee
+
+##### 2. Which species are migratory, that is, primarily present in one or two seasons?
+
+Slate-colored Junco, Lincoln's Sparrow
+
+
+##### 3. What is the peak month for each major species? (bullet list)
+
+• American Goldfinch: October
+
+• Black-capped Chickadee: November
+
+• Field Sparrow: May
+
+• Lincoln's Sparrow: October
+
+• Slate-colored Junco: October
+
+• Tree swallow: March
+
+##### 4. Which major species are seen in good numbers for at least 6 months of the year? (Hint: n_distinct() and >= 6)
+
+
+```{r}
+Good <-
+ByMonth %>%
+  group_by(Species, Month) %>%
+  summarise(total = sum(count)) %>%
+  filter(total > 100)
+
+Good %>%
+  summarise(good = n_distinct(Month)) %>% 
+  filter(good>=6)
+```
+
+

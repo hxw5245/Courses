@@ -1,0 +1,132 @@
+---
+title: 'Activity: Scraping Nuclear Reactors'
+author: "Haichen Wei"
+date: "Nov 12, 2020"
+output:
+  html_document:
+    df_print: paged
+---
+
+## Set Up
+```{r}
+rm(list = ls()) ## cleans up your R environment
+
+# load packages
+library(tidyverse)
+library(mosaic)
+library(DataComputing)
+library(lubridate)
+```
+
+
+# Task 1: Scrape raw data
+
+```{r}
+library(rvest)
+
+page <- "http://en.wikipedia.org/wiki/List_of_nuclear_reactors"
+tableList <- page %>%
+  read_html() %>%
+  html_nodes(css = "table") %>%
+  html_table(fill = TRUE)
+```
+
+```{r}
+Japan <-
+  tableList[[22]]
+Japan
+```
+
+If we ignore the first row, the data is tidy. The data is not tidy because the first row is redundant with the variable names, that makes it has different format with other rows, and the first row can't represent a case.
+
+# Task 2: Tidy Data & Data Cleaning
+
+```{r}
+# you may want to do your own investigation to understand why this line is needed
+names(Japan)[c(3,7)] <- c("type", "grossMW")
+
+Japan <-
+  Japan %>%
+  filter(row_number() > 1) %>%
+  rename(name = Name, 
+         reactor = `UnitNo.`,
+         model = Reactor,
+         status = Status, 
+         netMW = `Capacity in MW`,
+         construction = `Construction start`,
+         operation = `Commercial operation`, 
+         closure = Closure)
+```
+
+```{r}
+str(Japan)
+```
+
+```{r}
+Japan <-
+  Japan %>%
+  mutate(netMW = as.numeric(netMW), 
+         grossMW = as.numeric(grossMW),
+         construction = dmy(construction),
+         operation = dmy(operation),
+         closure = dmy(closure))
+Japan
+```
+
+# Task 3: Plot Net Generation Capacity vs Construction Date
+
+```{r}
+Japan %>% 
+  ggplot(aes(x = netMW, y = construction)) + geom_point() + aes(colour=type)
+```
+
+The FBR, GCR, HWLWR were used rarely, and after 1990, they were not used. The BWR and PWR are used most often until today. 
+
+# Task 4: Scrape & Clean China Data
+
+```{r}
+China <-
+tableList[[10]]
+```
+```{r}
+names(China)[c(3,7)] <- c("type", "grossMW")
+
+China <-
+  China %>%
+  filter(row_number() > 1) %>%
+  rename(name = Name, 
+         reactor = `UnitNo.`,
+         model = Reactor,
+         status = Status, 
+         netMW = `Capacity in MW`,
+         construction = `Construction start`,
+         operation = `Commercial operation`, 
+         closure = Closure)
+```
+```{r}
+China <-
+  China %>%
+  mutate(netMW = as.numeric(netMW), 
+         grossMW = as.numeric(grossMW),
+         construction = dmy(construction),
+         operation = dmy(operation),
+         closure = dmy(closure))
+China
+```
+
+```{r}
+Japan <- 
+  Japan %>% mutate(country = "Japan") 
+China <- 
+  China %>% mutate(country = "China") 
+Japan_China <- rbind(Japan, China)
+Japan_China
+```
+
+# Task 5: Reconstruct Info Graphic of Japan Reactors
+
+```{r}
+Japan %>% 
+  mutate(reactorID = paste(name, reactor)) %>%
+  ggplot(aes(x = operation, y = reactorID, colour=type, shape = status)) + geom_segment(aes(x = construction, xend=operation, yend = reactorID))
+```

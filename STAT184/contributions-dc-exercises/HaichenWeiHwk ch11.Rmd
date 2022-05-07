@@ -1,0 +1,106 @@
+---
+title: "STAT 184 Homework Exercises"
+author: "Haichen Wei"
+subtitle: DataComputing Chapters 11
+output:
+  html_document:
+    df_print: paged
+---
+
+## Assigned Exercises
+
+- DC Chapter 11 Exercises: 11.1, 11.2, 11.6
+
+## Front Matter
+
+```{r}
+# clean up workspace environment
+rm(list = ls())
+
+# all packages used for the assignment
+library(mosaic)
+library(tidyverse)
+
+```
+
+
+
+## Chapter 11 Exercises
+
+### Problem 11.1
+
+Previous data verbs take as input a single data frame along with other arguments to specify the exact operation to be carried out. Join family data verbs take two tables as input and produce a single table as output.
+
+### Problem 11.2
+
+They have different numbers of rows, and the second row in Demographics is a different case entirely from the second row in CountryCentroids.
+
+### Problem 11.6
+
+```{r}
+library(DataComputing)
+data("ZipGeography")
+help("ZipGeography")
+view(ZipGeography)
+```
+
+1. 1909 counties
+```{r}
+ZipGeography %>%
+  summarise(total = n_distinct(County, na.rm = TRUE))
+```
+
+2. Franklin is used in the most states.
+```{r}
+ZipGeography %>%
+  group_by(CityName) %>%
+  summarise(total = n_distinct(State, na.rm = TRUE)) %>%
+  arrange(desc(total)) %>%
+  head(2)
+```
+
+3. 
+```{r}
+ZipGeography %>%
+  select(State, CityName, Population)%>%
+  filter(Population >0 & State != "")%>%
+  group_by(State)%>%
+  summarise(totalS= sum(Population))%>%
+  left_join(
+    ZipGeography %>%
+    select(State, CityName, Population)%>%
+      filter(Population >0 & State != "")%>%
+    group_by(State,CityName)%>%
+      summarise(totalC=sum(Population))
+  )%>%
+  mutate(ratio = totalC/totalS)%>%
+  arrange(desc(ratio))%>%
+  filter(ratio>0.05)%>%
+    group_by(CityName)%>%
+    summarise(count = n_distinct(ratio))%>%
+    arrange(desc(count))
+```
+4. 
+```{r}
+ZipGeography%>%
+  select(State, Timezone)%>%
+  group_by(State)%>%
+  summarise(count = n_distinct(Timezone))%>%
+  filter(count>1)
+```
+5. 
+```{r}
+ZipGeography%>%
+  select(CityName, Timezone)%>%
+  group_by(CityName)%>%
+  summarise(count = n_distinct(Timezone))%>%
+  filter(count>1)
+```
+6. 
+```{r}
+ZipGeography%>%
+  select(County, Timezone)%>%
+  group_by(County)%>%
+  summarise(count = n_distinct(Timezone))%>%
+  filter(count>1)
+```

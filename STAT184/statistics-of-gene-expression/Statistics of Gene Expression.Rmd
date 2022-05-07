@@ -1,0 +1,193 @@
+---
+title: "Statistics of Gene Expression"
+author: "Haichen Wei"
+date: "Dec 3, 2020"
+output: 
+    html_notebook
+---
+
+
+# Set Up
+
+### Clean up environment and load packages
+```{r}
+# clean up the RStudio environment 
+rm(list = ls())
+
+# load all packages
+library(tidyverse)
+library(mosaic)
+library(DataComputing)
+```
+
+
+
+# 18.11 Simple Graphics for Gene Expression
+
+```{r}
+Narrow <-
+  NCI60 %>%
+  tidyr::gather(cellLine, expression, -Probe)
+
+CellTypes <-
+  NCI60cells %>%
+  select(cellLine, tissue) %>%
+  mutate(cellLine = gsub("\\:",".", as.character(cellLine)))
+
+Narrow <- 
+  Narrow %>%
+  inner_join(CellTypes)
+Narrow
+```
+```{r}
+Probe_TOP3A <-
+  Narrow %>%
+  filter(Probe=="TOP3A")
+Probe_TOP3A
+```
+```{r}
+SummaryStats <-
+  Probe_TOP3A %>%
+  group_by(tissue) %>%
+  summarise(mn_expr = exp(mean(expression, na.rm = TRUE)))
+SummaryStats
+```
+### 18.1
+```{r}
+SummaryStats %>% 
+  ggplot(aes(x = tissue, y = mn_expr)) +
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### 18.2
+```{r}
+Probe_TOP3A %>% 
+ggplot(aes(x = tissue, y = exp(expression))) +
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 30, hjust=1))
+```
+
+### 18.3
+```{r}
+SummaryStats <-  
+      SummaryStats %>%  
+      mutate(tissue = reorder(tissue, mn_expr)) 
+SummaryStats <-
+  Probe_TOP3A %>%
+  group_by(tissue) %>%
+  summarise(mn_expr = mean(expression,  na.rm = TRUE),
+            se = sd(expression, na.rm = TRUE) / sqrt(n())) 
+SummaryStats %>% 
+  ggplot(aes(x = tissue, y = exp(mn_expr))) +
+  geom_bar(stat = "identity", fill="gray", color=NA) +
+  geom_point(data = Probe_TOP3A, aes(x=tissue, y=exp(expression))) + 
+  theme(axis.text.x = element_text(angle = 30, hjust=1))
+```
+
+### 18.4
+```{r}
+SummaryStats <- 
+  SummaryStats %>%
+  mutate(top = mn_expr + 2 * se,
+         bottom = mn_expr - 2 * se) 
+SummaryStats %>%
+  ggplot(aes(x = tissue, y = exp(mn_expr))) +
+  geom_bar(stat = "identity", alpha=0.2) +
+  geom_errorbar(aes(x = tissue, 
+                    ymax = exp(top), 
+                    ymin =exp(bottom)), width=0.5) +
+  theme(axis.text.x = element_text(angle = 30, hjust=1))
+```
+
+### 18.5
+```{r}
+SummaryStats %>%
+  ggplot(aes(x = tissue, y = exp(mn_expr))) +
+  geom_point(data = Probe_TOP3A, aes(x=tissue, y=exp(expression)), size=1) +
+  geom_errorbar(aes(x = tissue, 
+                    ymax = exp(top), 
+                    ymin =exp(bottom)), width=0.5) +
+  theme(axis.text.x = element_text(angle = 30, hjust=1))
+```
+
+
+# 18.12 Probing for a probe
+```{r}
+# customize a user-defined function called `r2`
+r2 <- function(data) {
+  mosaic::rsquared(lm(data$expression ~ data$tissue))
+}
+
+ProbeR2 <- 
+  Narrow %>% 
+  group_by(Probe) %>%
+  dplyr::do(probe_rsq = r2(.)) %>%
+  mutate(r2 = unlist(probe_rsq))
+
+Actual <-
+  ProbeR2 %>%
+  arrange(desc(r2)) %>%
+  head(30) 
+```
+
+### 18.6
+```{r}
+Actual %>%
+  ggplot(aes(x = reorder(Probe, desc(r2)), y = r2)) +
+  geom_point() + 
+  xlab("Probe") + 
+  ylab("R-squared") + 
+  ggtitle("Probes with large R-squared for expression level explained by tissue type") + 
+  theme(axis.text.x = element_text(angle = 45, hjust=1))
+```
+
+### Choose one probe with high R-squared
+```{r}
+CD53<-
+  Narrow %>%
+  filter(Probe=="CD53")
+SummaryStats %>%
+  ggplot(aes(x = tissue, y = exp(mn_expr))) +
+  geom_point(data = CD53, aes(x=tissue, y=exp(expression))) +
+  geom_errorbar(aes(x = tissue, 
+                    ymax = exp(top), 
+                    ymin =exp(bottom)), width=0.5) +
+  theme(axis.text.x = element_text(angle = 30, hjust=1))
+```
+There is a difference between the graph of high R-squared probe and figure 18.5. Most plots are in the confidence interval in 18.5, and the values are larger, high  R-squared probe is closed to 0, and intervals are smaller.
+
+# 18.13 False discoveries
+```{r}
+NullR2 <-
+  Narrow %>%
+  group_by(Probe) %>%
+  mutate(expression = mosaic::shuffle(expression)) %>%
+  group_by(Probe) %>%
+  do(r2 = r2(.)) %>%
+  mutate(r2 = unlist(r2))
+```
+### 18.7
+```{r}
+ProbeR2 %>%
+  ggplot(aes(x = r2)) + 
+  geom_density(fill="gray30", color=NA) +
+  geom_density(data=NullR2, aes(x=r2), 
+               fill="gray80", alpha=.75, color=NA)
+```
+### 18.8
+```{r}
+Null <-
+  NullR2 %>% 
+  arrange(desc(r2)) %>%
+  head(30) 
+
+# append the 30 highest `Null` values to the `Actual` data
+Actual$null <- Null$r2
+
+Actual %>%
+  ggplot(aes(x = reorder(Probe, desc(r2)), y = r2)) +
+  geom_point() + 
+  geom_point(aes(y = null), color="gray50") +
+  theme(axis.text.x = element_text(angle = 45, hjust=1))
+```

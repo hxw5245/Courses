@@ -1,0 +1,106 @@
+---
+title: "STAT 184 Homework Exercises"
+author: "Haichen Wei"
+subtitle: DataComputing Chapters 12
+output:
+  html_document:
+    df_print: paged
+---
+
+## Assigned Exercises
+
+- DC Chapter 12 Exercises: 12.1 (1, 2, 3), 12.2 (1, 2, 3, 4), 12.3 (1, 2), 12.4
+
+## Front Matter
+
+```{r}
+# clean up workspace environment
+rm(list = ls())
+
+# all packages used for the assignment
+library(mosaic)
+library(tidyverse)
+library(DataComputing)
+```
+
+
+
+## Chapter 12 Exercises
+
+### Problem 12.1
+
+1. sex
+```{r}
+BothSexes <-
+  BabyNames %>%
+  spread( key=sex, value=count ) %>%
+  filter( F>1, M>1 )
+```
+2. 
+```{r}
+BothSexes%>%
+  group_by(name)%>%
+  summarise(F = sum(F), M = sum(M)) %>%
+  mutate(gender_balance  = abs(log(F/M)) ) %>%
+  arrange(gender_balance ) %>%
+  head(10)
+```
+3. 
+```{r}
+BothSexes%>%
+  mutate(gender_balance  = abs(log(F/M)) ) %>%
+  arrange(gender_balance ) %>%
+  filter(M > 100, F > 100) %>%
+  head(10)
+```
+
+### Problem 12.2
+
+1. • Version One: The number of baby names
+
+• Version Two:Each sex's number of name
+
+• Version Three: For the year 1912 and 2012, count the number of each name 
+
+2. Version Two is wider.
+```{r}
+Version_Two<-
+  BabyNames %>%
+  spread(key = sex, value=count ) %>%
+  filter(year %in% c(1912, 2012) )
+Version_Two
+```
+3. Version Three is wider.
+```{r}
+Version_Three<-
+  BabyNames %>%
+  filter(year %in% c(1912, 2012) )  %>%
+  spread(key = year, value=count)
+Version_Three
+```
+
+```{r}
+Version_One<-
+  Version_Three %>%
+    pivot_longer(cols = c("1912", "2012"), names_to = "year", values_to = "count")
+Version_One
+```
+
+4. Version Two, because it has a single column for count of female and male separately, then we can directly use pmin(M / F, F / M) to calculate the ratio.
+
+### Problem 12.3
+
+1. • A is wider.
+
+• B is wider.
+
+• A and B are both wide format for the C table, so they can't be wider for each other.
+
+2. Data Frame B is easiest to find the change. We can use mutate(change = Y2001 - Y2000) to add a new column. 
+
+### Problem 12.4
+
+1. The narrow data frame is difficult to find out the useful information at the first point, the information is messy and hard to read. 
+
+2. BP_wide %>% gather(key = when, value = sbp, before, after )
+

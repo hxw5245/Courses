@@ -1,0 +1,192 @@
+---
+title: "Activity: Penny vs Nickel Game"
+author: "Haichen Wei"
+date: "Dec 10, 2020"
+output: html_notebook
+---
+
+
+```{r}
+# front matter
+rm(list = ls())
+
+# No packages for this assignment since we're practicing Base R
+```
+
+
+# Activity
+
+This activity is based on homework assigned to Dr. Beckman's daughter by her 1st grade teacher.  The assignment is essentially a game that uses spinners to teach students about some basic foundations of probability.  
+
+## Part 1: Play the game with a partner (or two) to learn how it works.  
+
+Here are a few remarks about game play:
+
+- (Step 2) Spinner details
+    - Fun way to play: You can use the spinner directly with a pencil and paperclip as shown
+    - Less fun (but equivalent) alternative: You can make a "spinner" in R to play the game
+- (Step 2) Game board details
+    - Fun way to play: You can use coins to tally the Penny vs Nickel result on the provided game board
+    - Less fun (but equivalent) alternative: You can just tally the number of "Penny" outcomes and "Nickel" outcomes for each round on a sheet.
+- (Step 3) When one of coins has reached the top of the game board (i.e. observed 5 times), we declare that coin winner of the **ROUND**
+- *You may skip Steps 4 through 8*
+
+
+### Play the game "Which Coin Will Win?" 
+
+*Record the final tally of Pennies & Nickels observed in three rounds below:*
+using spinner A
+
+#### First round?
+
+Pennies: lose
+
+Nickels: win
+
+<br>
+
+#### 2. Second round?
+
+Pennies: win
+
+Nickels: lose
+
+<br>
+
+#### 3. Third round?
+
+Pennies: win
+
+Nickels: lose
+
+<br>
+
+
+## Part 2: Simulate the game
+
+We want to build a simulation to calculate the probability that "Penny" wins a round in the game while using Spinner A.  That is, 
+
+$Pr(\text{Penny Win } | \text{ Spinner A}) = ?$
+
+Perhaps you have studied probability theory in STAT 414 or elsewhere and know how to calculate this directly.  That would be handy, but probability can be counter-intuitive and it's easy to forget all of the name-brand probability distributions and their properties if you don't think about them often.  Other situations don't conform to a well-known distribution at all!  
+
+Whether you forgot the right probability distribution, never knew it, etc., you can often use simulations to get a good sense of what the answer should be!  Basically, you could physically conduct a simulation by playing the game many, many, many, many times and recording the result each time (you simulated the game 3 times in Part 1).  This is completely valid, but it would take far too long to play the game enough times to produce a useful result.
+
+Computers are **excellent** at doing things over and over and over again many times, so we'll simply program the computer to "play the game" just like you would and summarize the result.
+
+#### Expectations for "Spinner A"
+
+While intuition can sometimes be flawed, we should at least think about what kind of answers we might expect.  This will help us determine whether the result of our simulation seems to be reasonable.  We can use a few simple facts about probability, and even intuition about Spinner B to help:
+
+- Probability is always a proportion in the interval [0, 1] inclusive
+    - We will know there is a problem if our simulation results in a probability that is less than 0 (i.e. negative)
+    - We will know there is a problem if our simulation results in a probability that is greater than 1
+    
+- Look at the number of Pennies and Nickels in both Spinner A and Spinner B and see if you can produce a better estimate of the probability.  
+
+<br>
+
+**Will the probability that "Penny" wins a round in the game be higher for Spinner A or Spinner B?  Why?**
+
+Spinner A will have higher probability of penny. There are 6 coins in total for both spinner, spinner A has 4 pennies and 2 nickels, and spinner B has 3 pennies and 3 nickels. Thus, the probability of penny for spinner A is 4/6 which is greater than spinner B's 3/6.
+
+<br>
+
+**State new a LOWER bound for your estimate for Spinner A, and explain your reasoning:**
+
+The lower bound for penny win by using spinner A is 1/2, because the number of penny on spinner A is more than a half.
+
+<br>
+
+**State new a UPPER bound for your estimate for Spinner A, and explain your reasoning:**
+
+The upper bound for penny win is 2/3 because only 4 pennies out of 6 coins, so the probability is 4/6.
+
+<br>
+
+#### Simulation!
+
+Again, we just want to program our computer to simulate an outcome of the game that is equivalent to an outcome that we would observe if we continued to play the game over and over again many times.
+
+<br>
+
+**Step 1: Write down the steps of the game as an algorithm**
+
+A. Use Spinner A to choose either "Penny" or "Nickel"  
+
+B. Note whether or not the outcome of the "spin" was "Penny"
+
+C. Assess whether 5 Penny outcomes OR 5 Nickel outcomes have been observed  
+
+D. If Penny was observed 5 times (before Nickel), "Penny" wins the round; If Nickel was observed 5 times (before Penny), "Nickel" wins the round  
+
+E. Simulate many rounds of the game
+
+F. Calculate the proportion of rounds that were won by "Penny"
+
+<br>
+
+**Step 2: translate the algorithm into pseudo-code**
+
+- Create a vector aligned to Spinner A: `c("Penny", "Penny", "Penny", "Penny", "Nickel", "Nickel")`
+- Use the `sample( )` function to simulate one spin
+- Since we plan to simulate many rounds of the game, we need to initialize a placeholder vector to store the result of each simulated round (i.e. `pennyWins <- rep(NA, nsim)`)
+- Write a **`while`** loop to repeatedly document the results of each spin in the round until one of the coins is observed 5 times (hint: you'll need another vector to store outcomes within each round)
+- **`if`** Penny won the simulated round, note that result
+- Wrap the game in a **`for`** loop to note whether Penny won each of the simulated rounds
+- Calculate the proportion of simulated rounds that were won by the Penny!
+
+<br>
+
+**Step 3: write an R script for your simulation using Spinner B first**
+
+Since we know the answer for Spinner B is going to be 0.50, write the simulation for Spinner B in order to validate that your method works properly before you estimate Spinner A.  
+
+*Note: Your simulated probability should be correct when rounded to 2 digits.  Make sure you try the simulation a few times to verify that the second decimal place does not change from one attempt to the next.*
+
+```{r}
+Spinner_B <- c("Penny", "Penny", "Penny", "Nickel", "Nickel", "Nickel")
+nsim <-1000
+pennyWins <- rep(NA, nsim)
+for(i in 1:nsim){
+  pennyWins[i]<-sample(Spinner_B, 1)
+  outcomes <-array(pennyWins[i])
+  wins <-0
+  while(sum(outcomes == "Penny") < 5 & sum(outcomes =="Nickel") < 5){
+    if(pennyWins[i] == "Penny"){
+      wins <- wins+1
+    } 
+  }
+  print(outcomes/nsim)
+  }
+```
+<br>
+
+**Step 4: write an R script for your simulation using Spinner A**
+
+```{r}
+Spinner_A <- c("Penny", "Penny", "Penny", "Penny", "Nickel", "Nickel")
+nsim <-1000
+pennyWins <- rep(NA, nsim)
+for(i in 1:nsim){
+  pennyWins[i]<-sample(Spinner_A, 1)
+  outcomes <-array(pennyWins[i])
+  wins <-0
+  while(sum(outcomes == "Penny") < 5 & sum(outcomes =="Nickel") < 5){
+    if(pennyWins[i] == "Penny"){
+      wins <- wins+1
+    } 
+  }
+  print(outcomes/nsim)
+  }
+```
+
+<br>
+
+**Step 5: What's your answer?**
+
+State the Probability that Penny Wins when using Spinner A (accurate to two digits).
+
+0.66
+
+

@@ -1,0 +1,69 @@
+---
+title: 'Activity: Popular Names'
+author: "Haichen Wei"
+date: "Oct 8, 2020"
+output:
+  html_document:
+    df_print: paged
+---
+
+
+
+# Set Up
+
+```{r}
+# load necessary packages
+library(tidyverse)
+library(mosaic)
+library(DataComputing)
+```
+
+
+```{r}
+# Load the BabyNames data into RStudio environment (from DataComputing package)
+data("BabyNames")
+
+```
+
+# Activity
+
+**Goal**: By the end of the activity, each of you will create a graph (like Figure A.1 on p 159) showing ups and downs in the popularity of four names (your name & three additional names) according to the U.S. social security administration  
+
+
+### Step 1
+
+```{r}
+summary(BabyNames)
+```
+
+### Step 3
+
+• Sex does not appear in the graph.
+
+• The count variable is transformed to popularity.
+
+### Step 4
+
+• The cases will be filtered out by specific names.
+
+• Then, group the name and year, and summarized the sum of count within groups.
+
+• The new variable is popularity which calculates the total count of each name within a year.
+
+### Step 5
+
+Create a GlyphReadyForm data frame, and choose four names by using filter function, then group the name and year, summarise the sum of name count. Finally, use ggplot() command to make graphic.
+
+### Step 7
+
+```{r}
+GlyphReadyForm <-
+  BabyNames %>%
+    filter(name %in% c("Mary", "Anna", "Emma", "Haichen")) %>%
+    group_by(name, year) %>%
+    summarise(total= sum(count))
+GlyphReadyForm %>% 
+  ggplot(aes(x = year, y = total, group = name)) +
+  geom_line( size = 1, alpha = 0.5, aes(color = name)) +
+  ylab("Popularity") + xlab("Year")
+```

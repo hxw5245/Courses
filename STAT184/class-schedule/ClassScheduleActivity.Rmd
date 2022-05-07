@@ -1,0 +1,32 @@
+---
+title: "RMarkdown Class Schedule"
+author: "Haichen Wei"
+date: "September 11, 2020"
+output:
+  html_document:
+    df_print: paged
+---
+
+# Class Schedule
+
+### STAT 184: Introduction to R Programmaing
+
+R is a powerful, open-source programming language used widely for applications in statistics and data science. Students will be expected to access, join, wrangle, clean, and visualize real data. The course will emphasize use of "tidyverse" R packages (e.g. dplyr, ggplot2), although students will also be exposed to Base R and other packages. The course focuses on descriptive and graphical summary techniques rather than inferential statistical techniques. You can find more details in this [link](https://bulletins.psu.edu/university-course-descriptions/undergraduate/stat/).
+
+![](https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcT4rHOY2XU6bTc9a-NFWKaNyVroElhqkZ4vFA&usqp=CAU)
+
+
+
+### DS 200: Introduction to Data Sciences
+
+It is an introduction level class for data sciences, it introduces the backgroud and basic technoques of data sciences to students. It is a major required class for the data sciences major. You can find more information in this [link](https://bulletins.psu.edu/university-course-descriptions/undergraduate/ds/).
+
+![](https://intellipaat.com/blog/wp-content/uploads/2016/11/What-is-Data-Science.docx.jpg)
+
+
+
+### MATH 230: Calculus and Vector Analysis
+
+This is Calculus 3 class, it mostly introduces the three-dimensional analytic geometry and vectors. I take this course because it is a major requirement class.You can find more information in this [link](https://bulletins.psu.edu/university-course-descriptions/undergraduate/math/).
+
+![](https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Simple_Calculus_example.svg/1200px-Simple_Calculus_example.svg.png)

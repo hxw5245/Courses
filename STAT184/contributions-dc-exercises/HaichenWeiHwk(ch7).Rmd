@@ -1,0 +1,120 @@
+---
+title: "STAT 184 Homework Exercises" 
+subtitle: "DataComputing Chapters 7"
+author: "Haichen Wei"
+output: html_notebook
+---
+
+## Assigned Exercises
+
+- DC Chapter 7 Exercises: 7.1, 7.2, 7.3, 7.5, 7.6  
+
+## Front Matter
+
+```{r}
+# clean up workspace environment
+rm(list = ls())
+
+# all packages used for the assignment
+library(mosaic)
+library(tidyverse)
+
+```
+
+
+
+## Chapter 7 Exercises
+
+### Problem 7.1
+
+1. reduction function
+2. neither
+3. transformation function
+4. transformation function
+5. transformation function
+6. reduction function
+7. transformation function
+8. transformation function
+
+### Problem 7.2
+
+a. First should not be in quotations. 
+BabyNames %>% group_by(First) %>% summarise( votesReceived=n() )
+b. It should refer to dataset before group by, and n() is the function used for count. Tmp <- BabyNames %>% group_by(BabyNames, year, sex ) %>% summarise( Tmp, totalBirths=n())
+c. Same problems as part b, and missing the connection %>%.
+Tmp <- BabyNames %>% group_by(BabyNames, year, sex) %>% summarise( BabyNames, totalBirths=n() )
+
+### Problem 7.3
+```{r}
+library(DataComputing)
+help(Minneapolis2013)
+```
+1. 80101 cases
+2.
+```{r}
+Minneapolis2013 %>%
+  group_by(Second) %>%
+  tally(sort=TRUE)
+```
+   1 BETSY HODGES       14399
+   2 DON SAMUELS        14170
+   3 MARK ANDREW        12757
+   4 undervote          10598
+   5 JACKIE CHERRYHOMES  6470
+3. First: 834
+```{r}
+Minneapolis2013 %>% 
+  group_by(First) %>%
+  filter(First=="undervote") %>%
+  nrow()
+```
+   Second: 10598
+```{r}
+Minneapolis2013 %>% 
+  group_by(Second) %>%
+  filter(Second=="undervote") %>%
+  nrow()
+```
+   Third: 19210
+```{r}
+Minneapolis2013 %>% 
+  group_by(Third) %>%
+  filter(Third=="undervote") %>%
+  nrow()
+```
+4. 
+```{r}
+Minneapolis2013 %>%
+  group_by(First,Second) %>% 
+  summarise(count = n()) %>%
+  arrange(desc(count))
+```
+BETSY HODGES	MARK ANDREW	8787
+BETSY HODGES	DON SAMUELS	8743
+MARK ANDREW	BETSY HODGES	6970
+5. 
+```{r}
+Minneapolis2013 %>%
+  group_by(Precinct) %>% 
+  summarise(count = n()) %>%
+  arrange(desc(count))
+```
+The precinct with the highest number of ballots is P-06 with 9711 ballots.
+
+### Problem 7.5
+
+a. Voterdata_A shows the combinations of First and Second vote selections.
+b. VoterData_B shows the number of total cases.
+c. VoterData_C shows the combinations of First and Second vote selections, and the total of combinations.
+d. In VoterData_D, the summarise function has calculated the count of total cases, so it regards the entire dataset as group, it can't break down a subgroup when it's still grouped.
+
+### Problem 7.6
+
+```{r}
+Pop <- ZipGeography[!is.na(ZipGeography$Population),]
+tapply(Pop$Population, Pop$State, sum)
+
+Area <- ZipGeography[!is.na(ZipGeography$LandArea),]
+tapply(Area$LandArea, Area$State, sum)
+
+```

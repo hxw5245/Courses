@@ -1,0 +1,25 @@
+---
+title: "STAT 184 Homework Exercises"
+author: "Haichen Wei"
+subtitle: DataComputing Chapters 18
+output:
+  html_document:
+    df_print: paged
+---
+
+## Assigned Exercises
+
+- DC Chapter 18 Exercises: 18.1
+
+
+## Chapter 18 Exercises
+
+### Problem 18.1
+
+1. living area, bathrooms, fireplaces
+
+2. For houses with a living area less than 1080 square feet, the number of bathrooms will not make a difference in price.
+
+3. For houses with a living area between 1080 and 1483 square feet, the price of houses with 1.5 baths is 151424.197 dollars, and the price of houses with 2 bathrooms is 179796.647 dollars. The typical difference between them is 28372.45 dollars.
+
+4. Only when the living area is greater than 2816 square feet, the house will set up fireplaces, so it is associated with a higher house price. And the number of fireplaces will also cause the drffernce of price.

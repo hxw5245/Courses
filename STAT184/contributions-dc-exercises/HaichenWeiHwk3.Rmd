@@ -1,0 +1,113 @@
+---
+title: "STAT 184 Homework Exercises"
+author: "Haichen Wei"
+subtitle: DataComputing Chapters 5 & 6
+output:
+  html_document:
+    df_print: paged
+---
+
+## Assigned Exercises
+
+- DC Chapter 5 Exercises: 5.1 
+- DC Chapter 6 Exercises: 6.1 through 6.10
+
+## Front Matter
+
+```{r}
+# clean up workspace environment
+rm(list = ls())
+
+# all packages used for the assignment
+library(mosaic)
+library(tidyverse)
+
+```
+
+
+
+## Chapter 5 Exercises
+
+### Problem 5.1
+
+```{r}
+library(mosaicData)
+library(DataComputing)
+barGraphHelper(CPS85)
+
+ggplot(data=CPS85,aes(x=sex,y=wage,fill=married))+
+  geom_bar(stat='identity',position='dodge', width=.9)+ facet_wrap(~race,ncol=3)
+```
+## Chapter 6 Exercises
+
+### Problem 6.1
+
+1. suspension growth and adhesion growth
+2. Yes, the frames are the same
+3. red line:suspension growth for different amounts of time
+   black lines: adhesion growth
+   starts
+
+### Problem 6.2
+
+1. log enzyme concentration: y axis, range from -3 to 5
+   flux:a filled dot or a hollow dot
+   target: lines on top of the graph indicating the region in which each level
+   gene: x axis.
+   molecule: the different colors of the dot glyphs.
+2. Color: different types of molecules 
+   Fill: describes whether the molecule has flux = 0 or flux > 0. 
+   Location: x-axis (gene type) and y-axis (log enzyme concentration)
+3. Log enzyme concentration and gene
+4. target and gene
+
+### Problem 6.3
+
+1. vertical lines: center,low,high
+   star: polarity
+   color: different types of protein
+2. protein and cell density
+3. Yes, color shows the dtfferent types of protein
+4. Log2 ratio low vs high cell density, Apico-basal cell polarity proteins, color
+
+### Problem 6.4
+
+1. It's a horizontal coordinate which uses time and modes of transportation to indicate the position.
+2. It uses three coclors(red, yellow,blue) to indicate different modes of transportation.
+3. The shape/style of the glyphs encodes modes of transportation.
+   The position of the glyph encodes the time.
+4. time and modes of transportation, color
+
+### Problem 6.5
+
+b
+
+### Problem 6.6
+
+d
+
+### Problem 6.7
+
+b
+
+### Problem 6.8
+
+a, e
+
+### Problem 6.9
+
+```{r}
+Small <- 
+  NCHS %>% 
+  sample_n(size=5000) 
+  scatterGraphHelper(Small)
+  ggplot(data=Small,aes(x=bmi,y=weight))+geom_point()+aes(colour=smoker)
+```
+
+Variables: bmi, weight, smoker
+Attributes: bmi = x-axis, weight = y-axis, smoker = color
+
+### Problem 6.10
+
+a. The layer shows all the organisms, and some of them are overlapping
+b. There is no scale in this graph.

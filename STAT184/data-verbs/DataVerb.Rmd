@@ -1,0 +1,126 @@
+---
+title: "Activity: Data Verbs"
+author: "Haichen Wei"
+date: "due date: Oct 1st"
+output: html_notebook 
+---
+
+## Set Up
+```{r}
+rm(list = ls()) ## cleans up your R environment
+
+# load packages
+library(tidyverse)
+
+#ChickWeight from datasets package (default package)
+data("ChickWeight") #Load the ChickWeight data set into our RStudio environment
+```
+
+# Task 1: 
+
+### Data Description
+
+The ChickWeight data shows the relationship of weight and age of chicks on different diets.This experiment measured chick weight at the birth and every second day thereafter until day 20. They were also measured on day 21. There were four groups on chicks and total 578 cases.
+
+```{r}
+View(ChickWeight)
+help(ChickWeight)
+```
+
+### Basic Summaries
+`summarise()` : Find an expression involving `summarize()` and `ChickWeight` that will answer the following questions.
+
+- How many unique chicks? 
+
+```{r}
+ChickWeight %>%
+summarise(unique_chicks = n_distinct(Chick))
+```
+
+- What is the maximum weight?
+
+```{r}
+ChickWeight %>%
+summarise(max_weight = max(weight))
+```
+
+# Task 2: 
+`group_by()` : Find an expression involving `group_by()`, `summarize()` and `ChickWeight` to calculate the following. 
+
+- Compute the mean weight of each diet
+
+```{r}
+ChickWeight%>%
+  group_by(Diet)%>%
+  summarise(mean_weight=mean(weight))
+```
+
+- Compute the range of weights (max - min) for each diet
+
+```{r}
+ChickWeight%>%
+  group_by(Diet)%>%
+  summarise(range_weight=max(weight)-min(weight))
+```
+
+- Compute the mean weight and the range of weights for each diet by each different number of days since birth
+
+```{r}
+ChickWeight %>% 
+  group_by(Diet, Time) %>%
+  summarise(mean_weight=mean(weight),
+            range_weight=max(weight)-min(weight))
+```
+
+- How many chicks are on each diet?
+
+```{r}
+ChickWeight %>%
+group_by(Diet) %>%
+summarise(count = n())
+```
+
+- How many measurements for each chick?
+
+```{r}
+ChickWeight%>%
+  group_by(Chick)%>%
+  summarise(total=n())
+```
+
+# Task 3: HELPrct {mosaicData}
+
+```{r}
+#load a package
+library(mosaicData)
+#load the HELPrct data
+data("HELPrct")
+```
+
+### Data Description
+
+HELPrct data is a clinical trial for adult inpatients recruited, in order to link multidisciplinary assessment of patients to primary medical care. The data has 453 observations, including patients' age, cesd, d1, female, sex, g1b, homeless, i1, i2, indtot, mcs, pcs, pss_fr, racegrp, satreat, substance, treat, and sexrisk variables.
+
+```{r}
+View(HELPrct)
+help(HELPrct)
+```
+
+### Summaries
+Make 2 interesting questions related to the `HELPrct` data and create expressions involving `group_by()`, `summarise()` and `HELPrct`.   
+
+1. Compute the mean of patients' age for sex
+
+```{r}
+HELPrct%>%
+  group_by(sex)%>%
+  summarise(mean_age=mean(age, na.rm = TRUE))
+```
+
+2. How many people were tested for each homeless status?
+
+```{r}
+HELPrct%>%
+  group_by(homeless)%>%
+  summarise(total=n())
+```

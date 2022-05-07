@@ -1,0 +1,69 @@
+---
+title: "STAT 184 Homework Exercises"
+author: "Haichen Wei"
+subtitle: DataComputing Chapters 15
+output:
+  html_document:
+    df_print: paged
+---
+
+## Assigned Exercises
+
+- DC Chapter 15 Exercises: 15.1, 15.2, 15.3, 15.4, 15.5  
+
+## Front Matter
+
+```{r}
+# clean up workspace environment
+rm(list = ls())
+
+# all packages used for the assignment
+library(mosaic)
+library(tidyverse)
+library(DataComputing)
+```
+
+
+
+## Chapter 15 Exercises
+
+### Problem 15.1
+
+```{r}
+CPS85 %>%
+  ggplot(aes(x=sex, y=wage)) + aes(fill=sex) + geom_boxplot()
+```
+
+### Problem 15.2
+
+1. The most likely height will be 1.61 meters because the peak of the graph is there.
+2. The most likely height for women is 1.61 m, for men is 1.64 m.
+3. The most likely BMI for a 40-year old is 26, for a 70-year old is 27.
+
+### Problem 15.3
+
+```{r}
+CPS85 %>%
+  ggplot(aes(x=educ, y=wage)) + geom_point() + aes(colour=sex) + stat_smooth(method=lm) + ylim(0,15)
+```
+
+### Problem 15.4
+
+```{r}
+Galton %>%
+  ggplot(aes(x=height, y=mother)) + geom_density2d() +facet_wrap(~sex, ncol = 4)
+```
+
+### Problem 15.5
+
+• study 20 ZIP codes
+
+1. No, the scattered plot is nonuniform.
+2. Yes, the line is almost parallel to the x-axis.
+
+• study 80 ZIP codes
+
+1. The flat line is not consistent with the data. 
+2. The function for 80 zip codes has a narrow confidence band, and 20 zip codes confidence band is wider. We can estimate it as 21/9, so the ratio of confidence band heights is about 2.3.
+3. (1/√20)/ (1/√80) = 2, so this statistical theory seems right.
+

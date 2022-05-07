@@ -1,0 +1,84 @@
+---
+title: "STAT 184 Homework Exercises"
+author: "Haichen Wei"
+subtitle: DataComputing Chapters 8
+output:
+  html_document:
+    df_print: paged
+---
+
+## Assigned Exercises
+
+- DC Chapter 8 Exercises: 8.1, 8.2, 8.3
+
+## Front Matter
+
+```{r}
+# clean up workspace environment
+rm(list = ls())
+
+# all packages used for the assignment
+library(mosaic)
+library(tidyverse)
+
+```
+
+
+
+## Chapter 8 Exercises
+
+### Problem 8.1
+
+1. geom_point(): Add a layer of glyphs
+2. geom_histogram(): Add a layer of glyphs
+3. ggplot(): Construct a graphics frame
+4. scale_y_log10(): Change the scale for the frame
+5. ylab(): Set an axis label
+6. facet_wrap(): Divide the frame into facets
+7. geom_segment(): Add a layer of glyphs
+8. xlim(): Set an axis label
+9. facet_grid(): Divide the frame into facets
+
+### Problem 8.2
+
+```{r}
+library(mosaicData)
+library(DataComputing)
+```
+
+(A)
+```{r}
+ggplot( data = CPS85, aes(x = wage)) + geom_density(adjust = 1,alpha=0.5) + aes(colour = sex,fill=sex) + facet_wrap(~married, ncol = 4) + labs(title = "") + theme(legend.position = "right") 
+```
+
+(B)
+```{r}
+ggplot(data=CPS85,aes(x=age,y=wage))+aes(colour=sex)+facet_grid(married ~ .) + stat_smooth(method=loess) + ylim(0,15) 
+```
+
+(C)
+```{r}
+ggplot( data = CPS85, aes(x = age,y=wage)) + aes(colour = sex) + facet_wrap(~sector, ncol = 4) + stat_smooth(method=loess) + ylim(0,25) 
+```
+
+### Problem 8.3
+
+(A)
+```{r}
+ggplot(data=CPS85,aes(x=age,y=wage))+geom_point() 
+```
+
+(B)
+```{r}
+ggplot(data=CPS85,aes(x=age,y=wage))+geom_point(aes(shape=sex)) 
+```
+
+(C)
+```{r}
+ggplot(data=CPS85,aes(x=age,y=wage))+geom_point(aes(shape=sex))+facet_grid(married ~ .) 
+```
+
+(D)
+```{r}
+ggplot(data=CPS85,aes(x=age,y=wage))+geom_point(aes(shape=married)) 
+```
